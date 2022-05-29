@@ -24,16 +24,13 @@ export default class ObsidianCamera extends Plugin {
 		// This creates an icon in the left ribbon.
 		const ribbonIconEl = this.addRibbonIcon(
 			"camera",
-			"Sample Plugin",
+			"Obsidian Camera",
 			(evt: MouseEvent) => {
-				// Called when the user clicks the icon.
-				new Notice("This is a notice!");
+				new SampleModal(this.app).open()
 			}
 		);
-		// Perform additional things with the ribbon
-		ribbonIconEl.addClass("my-plugin-ribbon-class");
+		ribbonIconEl.addClass("my-plugin-ribbon-class"); // for css
 
-		// This adds a simple command that can be triggered anywhere
 		this.addCommand({
 			id: "Open camera modal",
 			name: "Open camera modal",
@@ -46,9 +43,9 @@ export default class ObsidianCamera extends Plugin {
 		// this.addSettingTab(new SampleSettingTab(this.app, this));
 	}
 
-	onunload() {
-		console.log("camera unloaded");
-	}
+	// onunload() {
+	// 	console.log("camera unloaded");
+	// }
 
 	async loadSettings() {
 		this.settings = Object.assign(
@@ -76,23 +73,26 @@ class SampleModal extends Modal {
 		const { contentEl } = this;
 		const webCamContainer = contentEl.createDiv();
 		const videoEl = webCamContainer.createEl("video");
-		const recordVideoButton = webCamContainer.createEl("button", "snap");
+		const recordVideoButton = webCamContainer.createEl("button");
+		const switchCameraButton = webCamContainer.createEl("button")
+		const snapPhotoButton = webCamContainer.createEl("button");
 		const canvas = webCamContainer.createEl("canvas");
 		canvas.style.display = "none";
 		recordVideoButton.innerText = "Start Recording";
-		const snapPhotoButton = webCamContainer.createEl("button", "record");
+		// switchCameraButton.innerText = "Switch Camera";
 		snapPhotoButton.innerText = "Take a snap";
 
 		const chunks: BlobPart[] = [];
 		let recorder: MediaRecorder = null;
 		const chosenFolderPath = "attachments/snaps";
 
-		const thisModal = this;
+
+
 		const view = this.app.workspace.getActiveViewOfType(MarkdownView);
-		const width = 200,
+		const width = 500,
 			height = 100;
 
-		const saveFile = (file: ArrayBuffer, isImage = false) => {
+		const saveFile = async (file: ArrayBuffer, isImage = false) => {
 			const dateString = (new Date() + "")
 				.slice(4, 28)
 				.split(" ")
@@ -107,8 +107,8 @@ class SampleModal extends Modal {
 			const folderExists =
 				app.vault.getAbstractFileByPath(chosenFolderPath);
 			if (!folderExists) app.vault.createFolder(chosenFolderPath);
-			app.vault.createBinary(filePath, file);
-			thisModal.close();
+			await app.vault.createBinary(filePath, file)
+
 
 			if (!view) return new Notice(`Video Saved to ${filePath}`);
 
@@ -122,8 +122,34 @@ class SampleModal extends Modal {
 			videoStream.getTracks().forEach((track) => {
 				track.stop();
 			});
+			this.close(); // closing the modal
 		};
 
+		const getVideoStream = async () => {
+			try {
+				return await navigator.mediaDevices.getUserMedia({
+					video: { deviceId: cameras[cameraIndex].deviceId },
+					// video: true,
+					audio: true,
+				});
+			} catch (error) {
+				console.log(error);
+				new Notice(error)
+				return null
+			}
+
+		}
+
+		const cameras = (await navigator.mediaDevices.enumerateDevices()).filter(d => d.kind === 'videoinput')
+		if (cameras.length <= 1) switchCameraButton.style.display = 'none'
+		let cameraIndex = 0
+		switchCameraButton.onclick = async () => {
+			cameraIndex = (cameraIndex + 1) % cameras.length
+			console.log(cameras[cameraIndex])
+			videoStream = await getVideoStream()
+		}
+
+		// console.log(cameras)
 		const takepicture = () => {
 			videoEl.style.display = "none";
 			canvas.getContext("2d").drawImage(videoEl, 0, 0, width, height);
@@ -133,21 +159,15 @@ class SampleModal extends Modal {
 			}, "image/png");
 		};
 		let videoStream: MediaStream = null;
-		try {
-			videoStream = await navigator.mediaDevices.getUserMedia({
-				video: true,
-				audio: true,
-			});
-		} catch (error) {
-			console.log(error);
-		}
 
-		if (!videoStream) return new Notice("Error in requesting video");
+		videoStream = await getVideoStream()
+
+		// if (!videoStream) return new Notice("Error in requesting video");
 		videoEl.srcObject = videoStream;
 
 		snapPhotoButton.onclick = takepicture;
-
 		recordVideoButton.onclick = async () => {
+			// switchCameraButton.disabled = true
 			let isRecording: boolean =
 				recorder && recorder.state === "recording";
 			if (isRecording) recorder.stop();

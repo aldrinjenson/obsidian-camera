@@ -9,10 +9,19 @@ Camera plugin for Obsidian(https://obsidian.md).
 
 ## How to use
 
--   Clone this repo.
--   `npm i` or `yarn` to install dependencies
--   `npm run dev` to start compilation in watch mode.
+Install directly by browsing from community plugins. Or
 
-## Manually installing the plugin
+### Manual Installation:
 
--   Copy over `main.js`, `styles.css`, `manifest.json` to your vault `VaultFolder/.obsidian/plugins/your-plugin-id/`.
+-   Create a new folder called obsidian-camera in `VaultFolder/.obsidian/plugins` folder
+-   Copy the `main.js` and `manifest.json` files to this folder
+-   reload Obsidian
+-   enable extension in installed community plugins section
+
+## Usage:
+
+-   Open command palete and search for "camera" once the extension is enabled
+
+## Demo
+
+![demo.gif](demo.gif)
