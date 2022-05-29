@@ -24,4 +24,5 @@ Install directly by browsing from community plugins. Or
 
 ## Demo
 
-![demo.gif](demo.gif)
+![demo.gif](./demo.gif)
+
