@@ -7,6 +7,8 @@ import {
 	Plugin,
 	PluginSettingTab,
 	Setting,
+	FileManager,
+	FileSystemAdapter,
 } from "obsidian";
 
 // Remember to rename these classes and interfaces!
@@ -50,12 +52,14 @@ export default class MyPlugin extends Plugin {
 				new SampleModal(this.app).open();
 			},
 		});
+		let fileLink = "";
 		// This adds an editor command that can perform some operation on the current editor instance
 		this.addCommand({
 			id: "sample-editor-command",
 			name: "Sample editor command",
 			editorCallback: (editor: Editor, view: MarkdownView) => {
 				console.log(editor.getSelection());
+				// editor.replaceRange(fileLink, editor.getCursor());
 				editor.replaceSelection("Sample Editor Command");
 			},
 		});
@@ -82,17 +86,6 @@ export default class MyPlugin extends Plugin {
 
 		// This adds a settings tab so the user can configure various aspects of the plugin
 		this.addSettingTab(new SampleSettingTab(this.app, this));
-
-		// If the plugin hooks up any global DOM events (on parts of the app that doesn't belong to this plugin)
-		// Using this function will automatically remove the event listener when this plugin is disabled.
-		this.registerDomEvent(document, "click", (evt: MouseEvent) => {
-			console.log("click", evt);
-		});
-
-		// When registering intervals, this function will automatically clear the interval when the plugin is disabled.
-		this.registerInterval(
-			window.setInterval(() => console.log("setInterval"), 5 * 60 * 1000)
-		);
 	}
 
 	onunload() {
@@ -118,9 +111,93 @@ class SampleModal extends Modal {
 	}
 
 	onOpen() {
+
+		if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia()) {
+			alert("getUserMedia() is not supported by your browser");
+			return;
+		}
+
 		const { contentEl } = this;
-		contentEl.innerHTML = `<input type="file" id="mypic" accept="image/*">`;
-		// contentEl.setText('Woah!');
+
+		const webCamContainer = contentEl.createDiv();
+		const videoEl = webCamContainer.createEl("video");
+		const snapButton = webCamContainer.createEl("button", "snap");
+		snapButton.innerText = "Snap photo";
+		const recordVidButton = webCamContainer.createEl("button", "record");
+		recordVidButton.innerText = "Record video";
+
+		let videoStream: MediaStream;
+		let chunks: BlobPart[] = [];
+		let isRecording: Boolean = false;
+		let chosenFolderPath = 'attachments/videos'
+
+		let thisModal = this
+		const view = this.app.workspace.getActiveViewOfType(MarkdownView);
+
+		snapButton.onclick = () => {
+			isRecording = !isRecording;
+			snapButton.innerText = "Recording..";
+
+			const recorder = new MediaRecorder(videoStream, {
+				mimeType: "video/webm",
+			});
+
+			recorder.onstop = function (e) {
+				videoStream.getTracks().forEach((track) => {
+					track.stop();
+				})
+				var blob = new Blob(chunks, { type: "audio/ogg; codecs=opus" });
+				blob.arrayBuffer()
+					.then((b) => {
+						const fileName = [
+							"video_",
+							(new Date() + "").slice(4, 28).split(' ').join('_').split(':').join('-'),
+							".webm",
+						].join("");
+						const filePath = chosenFolderPath + '/' + fileName
+						console.log({ filePath })
+						console.log({ fileName })
+
+						// app.vault.createFolder(chosenFolderPath)
+						app.vault.createBinary(filePath, b)
+						thisModal.close()
+
+						if (view) {
+							const cursor = view.editor.getCursor();
+							view.editor.replaceRange(`\n![[${filePath}]]`, cursor);
+							new Notice("Video Saved")
+						}
+					})
+					.catch((e) => console.log("error in createion: " + e));
+			};
+
+			if (!videoStream) return;
+
+			recorder.start();
+
+			setTimeout(() => {
+				snapButton.innerText = "Record";
+				recorder.ondataavailable = (e) => chunks.push(e.data);
+
+				recorder.stop();
+				console.log("stopping recording");
+			}, 3000);
+		};
+
+		videoEl.autoplay = true;
+		videoEl.id = "videoEl";
+		const constraints = {
+			video: true,
+			audio: true,
+		};
+
+		// const video = document.querySelector("video");
+
+		navigator.mediaDevices.getUserMedia(constraints).then((stream) => {
+			console.log({ stream });
+			videoStream = stream;
+			videoEl.srcObject = stream;
+		});
 	}
 
 	onClose() {
