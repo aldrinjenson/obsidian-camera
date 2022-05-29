@@ -4,8 +4,6 @@ import {
 	Modal,
 	Notice,
 	Plugin,
-	PluginSettingTab,
-	Setting,
 } from "obsidian";
 
 interface ObsidianCameraSettings {
@@ -87,7 +85,7 @@ class SampleModal extends Modal {
 
 		const chunks: BlobPart[] = [];
 		let recorder: MediaRecorder = null;
-		let chosenFolderPath = "attachments/snaps";
+		const chosenFolderPath = "attachments/snaps";
 
 		const thisModal = this;
 		const view = this.app.workspace.getActiveViewOfType(MarkdownView);
@@ -150,7 +148,7 @@ class SampleModal extends Modal {
 		snapPhotoButton.onclick = takepicture;
 
 		recordVideoButton.onclick = async () => {
-			let isRecording: Boolean =
+			let isRecording: boolean =
 				recorder && recorder.state === "recording";
 			if (isRecording) recorder.stop();
 			isRecording = !isRecording;
