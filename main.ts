@@ -1,6 +1,5 @@
 import {
 	App,
-	Editor,
 	MarkdownView,
 	Modal,
 	Notice,
@@ -8,8 +7,6 @@ import {
 	PluginSettingTab,
 	Setting,
 } from "obsidian";
-
-// Remember to rename these classes and interfaces!
 
 interface ObsidianCameraSettings {
 	mySetting: string;
@@ -86,52 +83,61 @@ class SampleModal extends Modal {
 		const webCamContainer = contentEl.createDiv();
 		const videoEl = webCamContainer.createEl("video");
 		const recordVideoButton = webCamContainer.createEl("button", "snap");
-		const canvas = webCamContainer.createEl('canvas')
-		canvas.style.display = 'none'
+		const canvas = webCamContainer.createEl("canvas");
+		canvas.style.display = "none";
 		recordVideoButton.innerText = "Start Recording";
 		const snapPhotoButton = webCamContainer.createEl("button", "record");
 		snapPhotoButton.innerText = "Take a snap";
 
 		const chunks: BlobPart[] = [];
 		let recorder: MediaRecorder = null;
-		let chosenFolderPath = "attachments/videos";
+		let chosenFolderPath = "attachments/snaps";
 
 		const thisModal = this;
 		const view = this.app.workspace.getActiveViewOfType(MarkdownView);
-		const width = 200, height = 100
+		const width = 200,
+			height = 100;
 
+		const saveFile = (file: ArrayBuffer, isImage = false) => {
+			const dateString = (new Date() + "")
+				.slice(4, 28)
+				.split(" ")
+				.join("_")
+				.split(":")
+				.join("-");
+			const fileName = isImage
+				? `image_${dateString}.png`
+				: `video_${dateString}.webm`;
 
-		const saveFile = (fileName: string, file: ArrayBuffer, isImage = false) => {
 			const filePath = chosenFolderPath + "/" + fileName;
-			const folderExists = app.vault.getAbstractFileByPath(chosenFolderPath)
-			if (!folderExists) app.vault.createFolder(chosenFolderPath)
+			const folderExists =
+				app.vault.getAbstractFileByPath(chosenFolderPath);
+			if (!folderExists) app.vault.createFolder(chosenFolderPath);
 			app.vault.createBinary(filePath, file);
 			thisModal.close();
 
-			if (view) {
-				const cursor = view.editor.getCursor();
+			if (!view) return new Notice(`Video Saved to ${filePath}`);
 
-				view.editor.replaceRange(
-					isImage ? `![${fileName}](${filePath})\n` :
-						`\n![[${filePath}]]\n`,
-					cursor
-				);
-			} else {
-				new Notice(`Video Saved to ${filePath}`);
-			}
-		}
+			const cursor = view.editor.getCursor();
+			view.editor.replaceRange(
+				isImage
+					? `![${fileName}](${filePath})\n`
+					: `\n![[${filePath}]]\n`,
+				cursor
+			);
+			videoStream.getTracks().forEach((track) => {
+				track.stop();
+			});
+		};
 
 		const takepicture = () => {
 			videoEl.style.display = "none";
-			// canvas.style.display = "block";
-			canvas.width = width;
-			canvas.height = height;
-			canvas.getContext('2d').drawImage(videoEl, 0, 0, width, height);
+			canvas.getContext("2d").drawImage(videoEl, 0, 0, width, height);
 			canvas.toBlob(async (blob) => {
-				const bufferFile = await blob.arrayBuffer()
-				saveFile('tempImg1.png', bufferFile, true)
-			}, 'image/png')
-		}
+				const bufferFile = await blob.arrayBuffer();
+				saveFile(bufferFile, true);
+			}, "image/png");
+		};
 		let videoStream: MediaStream = null;
 		try {
 			videoStream = await navigator.mediaDevices.getUserMedia({
@@ -145,10 +151,11 @@ class SampleModal extends Modal {
 		if (!videoStream) return new Notice("Error in requesting video");
 		videoEl.srcObject = videoStream;
 
-		snapPhotoButton.onclick = takepicture
+		snapPhotoButton.onclick = takepicture;
 
 		recordVideoButton.onclick = async () => {
-			let isRecording: Boolean = recorder && recorder.state === 'recording';
+			let isRecording: Boolean =
+				recorder && recorder.state === "recording";
 			if (isRecording) recorder.stop();
 			isRecording = !isRecording;
 			recordVideoButton.innerText = isRecording
@@ -161,26 +168,13 @@ class SampleModal extends Modal {
 				});
 			}
 
-
 			recorder.ondataavailable = (e) => chunks.push(e.data);
 			recorder.onstop = async (e) => {
-				videoStream.getTracks().forEach((track) => {
-					console.log(track)
-					track.stop();
+				const blob = new Blob(chunks, {
+					type: "audio/ogg; codecs=opus",
 				});
-				const blob = new Blob(chunks, { type: "audio/ogg; codecs=opus" });
-				const bufferFile = await blob.arrayBuffer()
-				const fileName = [
-					"video_",
-					(new Date() + "")
-						.slice(4, 28)
-						.split(" ")
-						.join("_")
-						.split(":")
-						.join("-"),
-					".webm",
-				].join("");
-				saveFile(fileName, bufferFile)
+				const bufferFile = await blob.arrayBuffer();
+				saveFile(bufferFile, false);
 			};
 			recorder.start();
 		};
@@ -195,31 +189,31 @@ class SampleModal extends Modal {
 	}
 }
 
-class SampleSettingTab extends PluginSettingTab {
-	plugin: ObsidianCamera;
+// class SampleSettingTab extends PluginSettingTab {
+// 	plugin: ObsidianCamera;
 
-	constructor(app: App, plugin: ObsidianCamera) {
-		super(app, plugin);
-		this.plugin = plugin;
-	}
+// 	constructor(app: App, plugin: ObsidianCamera) {
+// 		super(app, plugin);
+// 		this.plugin = plugin;
+// 	}
 
-	display(): void {
-		const { containerEl } = this;
-		containerEl.empty();
-		containerEl.createEl("h2", { text: "Settings for my awesome plugin." });
+// 	display(): void {
+// 		const { containerEl } = this;
+// 		containerEl.empty();
+// 		containerEl.createEl("h2", { text: "Settings for my awesome plugin." });
 
-		new Setting(containerEl)
-			.setName("Video Save Path")
-			.setDesc("The folder path to which the videos will be saved")
-			.addText((text) =>
-				text
-					.setPlaceholder("Enter your secret")
-					.setValue(this.plugin.settings.mySetting)
-					.onChange(async (value) => {
-						console.log("Secret: " + value);
-						this.plugin.settings.mySetting = value;
-						await this.plugin.saveSettings();
-					})
-			);
-	}
-}
+// 		new Setting(containerEl)
+// 			.setName("Video Save Path")
+// 			.setDesc("The folder path to which the videos will be saved")
+// 			.addText((text) =>
+// 				text
+// 					.setPlaceholder("Enter your secret")
+// 					.setValue(this.plugin.settings.mySetting)
+// 					.onChange(async (value) => {
+// 						console.log("save path: " + value);
+// 						this.plugin.settings.mySetting = value;
+// 						await this.plugin.saveSettings();
+// 					})
+// 			);
+// 	}
+// }
