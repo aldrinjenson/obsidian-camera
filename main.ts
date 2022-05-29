@@ -7,22 +7,20 @@ import {
 	Plugin,
 	PluginSettingTab,
 	Setting,
-	FileManager,
-	FileSystemAdapter,
 } from "obsidian";
 
 // Remember to rename these classes and interfaces!
 
-interface MyPluginSettings {
+interface ObsidianCameraSettings {
 	mySetting: string;
 }
 
-const DEFAULT_SETTINGS: MyPluginSettings = {
+const DEFAULT_SETTINGS: ObsidianCameraSettings = {
 	mySetting: "default",
 };
 
-export default class MyPlugin extends Plugin {
-	settings: MyPluginSettings;
+export default class ObsidianCamera extends Plugin {
+	settings: ObsidianCameraSettings;
 
 	async onload() {
 		await this.loadSettings();
@@ -46,41 +44,10 @@ export default class MyPlugin extends Plugin {
 
 		// This adds a simple command that can be triggered anywhere
 		this.addCommand({
-			id: "open-sample-modal-simple",
-			name: "Open sample modal (simple)",
+			id: "Open camera modal",
+			name: "Open camera modal",
 			callback: () => {
 				new SampleModal(this.app).open();
-			},
-		});
-		let fileLink = "";
-		// This adds an editor command that can perform some operation on the current editor instance
-		this.addCommand({
-			id: "sample-editor-command",
-			name: "Sample editor command",
-			editorCallback: (editor: Editor, view: MarkdownView) => {
-				console.log(editor.getSelection());
-				// editor.replaceRange(fileLink, editor.getCursor());
-				editor.replaceSelection("Sample Editor Command");
-			},
-		});
-		// This adds a complex command that can check whether the current state of the app allows execution of the command
-		this.addCommand({
-			id: "open-sample-modal-complex",
-			name: "Open sample modal (complex)",
-			checkCallback: (checking: boolean) => {
-				// Conditions to check
-				const markdownView =
-					this.app.workspace.getActiveViewOfType(MarkdownView);
-				if (markdownView) {
-					// If checking is true, we're simply "checking" if the command can be run.
-					// If checking is false, then we want to actually perform the operation.
-					if (!checking) {
-						new SampleModal(this.app).open();
-					}
-
-					// This command will only show up in Command Palette when the check function returns true
-					return true;
-				}
 			},
 		});
 
@@ -110,94 +77,116 @@ class SampleModal extends Modal {
 		super(app);
 	}
 
-	onOpen() {
-
+	async onOpen() {
 		if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia()) {
-			alert("getUserMedia() is not supported by your browser");
-			return;
+			return new Notice("getUserMedia() is not supported by your system");
 		}
 
 		const { contentEl } = this;
-
 		const webCamContainer = contentEl.createDiv();
 		const videoEl = webCamContainer.createEl("video");
-		const snapButton = webCamContainer.createEl("button", "snap");
-		snapButton.innerText = "Snap photo";
-		const recordVidButton = webCamContainer.createEl("button", "record");
-		recordVidButton.innerText = "Record video";
+		const recordVideoButton = webCamContainer.createEl("button", "snap");
+		const canvas = webCamContainer.createEl('canvas')
+		canvas.style.display = 'none'
+		recordVideoButton.innerText = "Start Recording";
+		const snapPhotoButton = webCamContainer.createEl("button", "record");
+		snapPhotoButton.innerText = "Take a snap";
 
-		let videoStream: MediaStream;
-		let chunks: BlobPart[] = [];
-		let isRecording: Boolean = false;
-		let chosenFolderPath = 'attachments/videos'
+		const chunks: BlobPart[] = [];
+		let recorder: MediaRecorder = null;
+		let chosenFolderPath = "attachments/videos";
 
-		let thisModal = this
+		const thisModal = this;
 		const view = this.app.workspace.getActiveViewOfType(MarkdownView);
+		const width = 200, height = 100
 
-		snapButton.onclick = () => {
-			isRecording = !isRecording;
-			snapButton.innerText = "Recording..";
 
-			const recorder = new MediaRecorder(videoStream, {
-				mimeType: "video/webm",
+		const saveFile = (fileName: string, file: ArrayBuffer, isImage = false) => {
+			const filePath = chosenFolderPath + "/" + fileName;
+			const folderExists = app.vault.getAbstractFileByPath(chosenFolderPath)
+			if (!folderExists) app.vault.createFolder(chosenFolderPath)
+			app.vault.createBinary(filePath, file);
+			thisModal.close();
+
+			if (view) {
+				const cursor = view.editor.getCursor();
+
+				view.editor.replaceRange(
+					isImage ? `![${fileName}](${filePath})\n` :
+						`\n![[${filePath}]]\n`,
+					cursor
+				);
+			} else {
+				new Notice(`Video Saved to ${filePath}`);
+			}
+		}
+
+		const takepicture = () => {
+			videoEl.style.display = "none";
+			// canvas.style.display = "block";
+			canvas.width = width;
+			canvas.height = height;
+			canvas.getContext('2d').drawImage(videoEl, 0, 0, width, height);
+			canvas.toBlob(async (blob) => {
+				const bufferFile = await blob.arrayBuffer()
+				saveFile('tempImg1.png', bufferFile, true)
+			}, 'image/png')
+		}
+		let videoStream: MediaStream = null;
+		try {
+			videoStream = await navigator.mediaDevices.getUserMedia({
+				video: true,
+				audio: true,
 			});
+		} catch (error) {
+			console.log(error);
+		}
 
-			recorder.onstop = function (e) {
+		if (!videoStream) return new Notice("Error in requesting video");
+		videoEl.srcObject = videoStream;
+
+		snapPhotoButton.onclick = takepicture
+
+		recordVideoButton.onclick = async () => {
+			let isRecording: Boolean = recorder && recorder.state === 'recording';
+			if (isRecording) recorder.stop();
+			isRecording = !isRecording;
+			recordVideoButton.innerText = isRecording
+				? "Stop Recording"
+				: "Start Recording";
+
+			if (!recorder) {
+				recorder = new MediaRecorder(videoStream, {
+					mimeType: "video/webm",
+				});
+			}
+
+
+			recorder.ondataavailable = (e) => chunks.push(e.data);
+			recorder.onstop = async (e) => {
 				videoStream.getTracks().forEach((track) => {
+					console.log(track)
 					track.stop();
-				})
-				var blob = new Blob(chunks, { type: "audio/ogg; codecs=opus" });
-				blob.arrayBuffer()
-					.then((b) => {
-						const fileName = [
-							"video_",
-							(new Date() + "").slice(4, 28).split(' ').join('_').split(':').join('-'),
-							".webm",
-						].join("");
-						const filePath = chosenFolderPath + '/' + fileName
-						console.log({ filePath })
-						console.log({ fileName })
-
-						// app.vault.createFolder(chosenFolderPath)
-						app.vault.createBinary(filePath, b)
-						thisModal.close()
-
-						if (view) {
-							const cursor = view.editor.getCursor();
-							view.editor.replaceRange(`\n![[${filePath}]]`, cursor);
-							new Notice("Video Saved")
-						}
-					})
-					.catch((e) => console.log("error in createion: " + e));
+				});
+				const blob = new Blob(chunks, { type: "audio/ogg; codecs=opus" });
+				const bufferFile = await blob.arrayBuffer()
+				const fileName = [
+					"video_",
+					(new Date() + "")
+						.slice(4, 28)
+						.split(" ")
+						.join("_")
+						.split(":")
+						.join("-"),
+					".webm",
+				].join("");
+				saveFile(fileName, bufferFile)
 			};
-
-			if (!videoStream) return;
-
 			recorder.start();
-
-			setTimeout(() => {
-				snapButton.innerText = "Record";
-				recorder.ondataavailable = (e) => chunks.push(e.data);
-
-				recorder.stop();
-				console.log("stopping recording");
-			}, 3000);
 		};
 
 		videoEl.autoplay = true;
 		videoEl.id = "videoEl";
-		const constraints = {
-			video: true,
-			audio: true,
-		};
-
-		// const video = document.querySelector("video");
-
-		navigator.mediaDevices.getUserMedia(constraints).then((stream) => {
-			console.log({ stream });
-			videoStream = stream;
-			videoEl.srcObject = stream;
-		});
 	}
 
 	onClose() {
@@ -207,23 +196,21 @@ class SampleModal extends Modal {
 }
 
 class SampleSettingTab extends PluginSettingTab {
-	plugin: MyPlugin;
+	plugin: ObsidianCamera;
 
-	constructor(app: App, plugin: MyPlugin) {
+	constructor(app: App, plugin: ObsidianCamera) {
 		super(app, plugin);
 		this.plugin = plugin;
 	}
 
 	display(): void {
 		const { containerEl } = this;
-
 		containerEl.empty();
-
 		containerEl.createEl("h2", { text: "Settings for my awesome plugin." });
 
 		new Setting(containerEl)
-			.setName("Setting #1")
-			.setDesc("It's a secret")
+			.setName("Video Save Path")
+			.setDesc("The folder path to which the videos will be saved")
 			.addText((text) =>
 				text
 					.setPlaceholder("Enter your secret")
