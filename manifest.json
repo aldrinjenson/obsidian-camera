@@ -6,5 +6,5 @@
 	"description": "Camera plugin for Obsidian",
 	"author": "Aldrin Jenson",
 	"authorUrl": "https://aldrinjenson.github.io/",
-	"isDesktopOnly": true
+	"isDesktopOnly": false
 }
