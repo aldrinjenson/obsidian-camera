@@ -16,7 +16,7 @@ Install directly by browsing from community plugins. Or
 -   Create a new folder called obsidian-camera in `VaultFolder/.obsidian/plugins` folder
 -   Copy the `main.js` and `manifest.json` files to this folder
 -   reload Obsidian
--   enable extension in installed community plugins section
+-   enable "Obsidian Camera" extension under Settings>Community plugins>Installed pluggins
 
 ## Usage:
 
@@ -25,4 +25,3 @@ Install directly by browsing from community plugins. Or
 ## Demo
 
 ![demo.gif](./demo.gif)
-
