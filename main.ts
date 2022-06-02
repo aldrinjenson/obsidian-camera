@@ -2,8 +2,6 @@ import { App, MarkdownView, Modal, Notice, Plugin } from "obsidian";
 
 export default class ObsidianCamera extends Plugin {
 	async onload() {
-		console.log("loaded obsidian camera");
-
 		this.addRibbonIcon("camera", "Obsidian Camera", (evt: MouseEvent) => {
 			new CameraModal(this.app).open();
 		});
