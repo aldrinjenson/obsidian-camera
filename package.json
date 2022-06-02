@@ -1,6 +1,6 @@
 {
 	"name": "obsidian-camera-plugin",
-	"version": "1.0.1",
+	"version": "1.0.2",
 	"description": "Camera plugin for Obsidian (https://obsidian.md)",
 	"main": "main.js",
 	"scripts": {
