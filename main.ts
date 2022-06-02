@@ -24,7 +24,7 @@ class CameraModal extends Modal {
 	}
 
 	async onOpen() {
-		if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia()) {
+		if (!navigator.mediaDevices) {
 			return new Notice("getUserMedia() is not supported by your system");
 		}
 
@@ -116,28 +116,25 @@ class CameraModal extends Modal {
 			videoStream = await getVideoStream();
 		};
 
-		const takepicture = () => {
+		snapPhotoButton.onclick = () => {
 			const canvas = webCamContainer.createEl("canvas");
 			canvas.style.display = "none";
-			let width = videoEl.videoWidth;
-			let height = videoEl.videoHeight;
-			canvas.height = height;
-			canvas.width = width;
+			const { videoHeight, videoWidth } = videoEl
+			canvas.height = videoHeight;
+			canvas.width = videoWidth;
 
-			canvas.getContext("2d").drawImage(videoEl, 0, 0, width, height);
+			canvas.getContext("2d").drawImage(videoEl, 0, 0, videoWidth, videoHeight);
 			canvas.toBlob(async (blob) => {
 				const bufferFile = await blob.arrayBuffer();
 				saveFile(bufferFile, true);
 			}, "image/png");
 		};
 		let videoStream: MediaStream = null;
-
 		videoStream = await getVideoStream();
 
-		// if (!videoStream) return new Notice("Error in requesting video");
+		if (!videoStream) return new Notice("Error in requesting video");
 		videoEl.srcObject = videoStream;
 
-		snapPhotoButton.onclick = takepicture;
 		recordVideoButton.onclick = async () => {
 			switchCameraButton.disabled = true;
 			let isRecording: boolean =
