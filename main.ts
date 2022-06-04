@@ -8,7 +8,7 @@ export default class ObsidianCamera extends Plugin {
 
 		this.addCommand({
 			id: "Open camera modal",
-			name: "Open camera modal",
+			name: "Open camera modal / File Picker",
 			callback: () => {
 				new CameraModal(this.app).open();
 			},
@@ -23,7 +23,7 @@ class CameraModal extends Modal {
 
 	async onOpen() {
 		if (!navigator.mediaDevices) {
-			return new Notice("getUserMedia() is not supported by your system");
+			return new Notice("getUserMedia() is not supported by your system! Exiting");
 		}
 
 		const { contentEl } = this;
@@ -38,18 +38,19 @@ class CameraModal extends Modal {
 		const snapPhotoButton = webCamContainer.createEl("button", {
 			text: "Take a snap",
 		});
-
 		const filePicker = webCamContainer.createEl("input", {
 			placeholder: "Choose image file from system",
 			type: "file",
 		});
-		filePicker.accept = "image/*";
+
+		filePicker.accept = "image/*,video/*";
 		filePicker.capture = "camera";
+
 		filePicker.onchange = async () => {
-			new Notice(filePicker.files[0].name); // to be removed
 			const chosenFile = filePicker.files[0];
+			console.log(chosenFile.name)
 			const bufferFile = await chosenFile.arrayBuffer();
-			saveFile(bufferFile, true);
+			saveFile(bufferFile, true, chosenFile.name.split(' ').join('-'));
 		};
 
 		const chunks: BlobPart[] = [];
@@ -58,16 +59,18 @@ class CameraModal extends Modal {
 
 		const view = this.app.workspace.getActiveViewOfType(MarkdownView);
 
-		const saveFile = async (file: ArrayBuffer, isImage = false) => {
-			const dateString = (new Date() + "")
-				.slice(4, 28)
-				.split(" ")
-				.join("_")
-				.split(":")
-				.join("-");
-			const fileName = isImage
-				? `image_${dateString}.png`
-				: `video_${dateString}.webm`;
+		const saveFile = async (file: ArrayBuffer, isImage = false, fileName = '') => {
+			if (!fileName) {
+				const dateString = (new Date() + "")
+					.slice(4, 28)
+					.split(" ")
+					.join("_")
+					.split(":")
+					.join("-");
+				fileName = isImage
+					? `image_${dateString}.png`
+					: `video_${dateString}.webm`;
+			}
 
 			const filePath = chosenFolderPath + "/" + fileName;
 			const folderExists =
@@ -75,7 +78,7 @@ class CameraModal extends Modal {
 			if (!folderExists) app.vault.createFolder(chosenFolderPath);
 			await app.vault.createBinary(filePath, file);
 
-			if (!view) return new Notice(`Video Saved to ${filePath}`);
+			if (!view) return new Notice(`Saved to ${filePath}`);
 
 			const cursor = view.editor.getCursor();
 			view.editor.replaceRange(
@@ -98,7 +101,7 @@ class CameraModal extends Modal {
 				});
 			} catch (error) {
 				console.log(error);
-				new Notice(error);
+				// new Notice(error);
 				return null;
 			}
 		};
@@ -161,7 +164,7 @@ class CameraModal extends Modal {
 		};
 
 		videoEl.autoplay = true;
-		videoEl.id = "videoEl";
+		videoEl.muted = true
 	}
 
 	onClose() {

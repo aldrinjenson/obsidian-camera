@@ -4,8 +4,9 @@ Camera plugin for Obsidian(https://obsidian.md).
 
 ### Features
 
--   take photo and video recordings and have them saved in vault
--   create and paste links to the recording automatically if a markdown file is open
+-   Take photo and video recordings and have them saved in vault
+-   Create and paste links to the recording automatically if a markdown file is open
+-   File picker
 
 ## How to use
 
