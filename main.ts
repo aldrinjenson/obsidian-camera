@@ -22,13 +22,13 @@ class CameraModal extends Modal {
 	}
 
 	async onOpen() {
-		if (!navigator.mediaDevices) {
-			return new Notice("getUserMedia() is not supported by your system! Exiting");
-		}
-
 		const { contentEl } = this;
 		const webCamContainer = contentEl.createDiv();
+		const pText = webCamContainer.createEl('p', { text: 'getVideoStream not yet supported on this device.' });
+		pText.style.display = 'none'
 		const videoEl = webCamContainer.createEl("video");
+		videoEl.autoplay = true;
+		videoEl.muted = true
 		const recordVideoButton = webCamContainer.createEl("button", {
 			text: "Start recording",
 		});
@@ -42,20 +42,46 @@ class CameraModal extends Modal {
 			placeholder: "Choose image file from system",
 			type: "file",
 		});
-
 		filePicker.accept = "image/*,video/*";
 		filePicker.capture = "camera";
+		const chosenFolderPath = "attachments/snaps";
+		const chunks: BlobPart[] = [];
+		let recorder: MediaRecorder = null;
+		let videoStream: MediaStream = null;
+
+		const cameras = (
+			await navigator.mediaDevices.enumerateDevices()
+		).filter((d) => d.kind === "videoinput");
+
+		if (cameras.length <= 1) switchCameraButton.style.display = "none";
+		let cameraIndex = 0;
+
+		const getVideoStream = async () => {
+			try {
+				return await navigator.mediaDevices.getUserMedia({
+					video: { deviceId: cameras[cameraIndex].deviceId },
+					audio: true,
+				});
+			} catch (error) {
+				console.log(error);
+				return null;
+			}
+		};
+
+		videoStream = await getVideoStream();
+		if (!videoStream) {
+			videoEl.style.display = 'none'
+			pText.style.display = 'block'
+			snapPhotoButton.style.display = 'none'
+			recordVideoButton.style.display = 'none'
+		}
 
 		filePicker.onchange = async () => {
 			const chosenFile = filePicker.files[0];
-			console.log(chosenFile.name)
 			const bufferFile = await chosenFile.arrayBuffer();
-			saveFile(bufferFile, true, chosenFile.name.split(' ').join('-'));
+			saveFile(bufferFile, false, chosenFile.name.split(' ').join('-'));
 		};
 
-		const chunks: BlobPart[] = [];
-		let recorder: MediaRecorder = null;
-		const chosenFolderPath = "attachments/snaps";
 
 		const view = this.app.workspace.getActiveViewOfType(MarkdownView);
 
@@ -71,12 +97,16 @@ class CameraModal extends Modal {
 					? `image_${dateString}.png`
 					: `video_${dateString}.webm`;
 			}
+			if (!isImage) new Notice("Adding video to vault...")
 
 			const filePath = chosenFolderPath + "/" + fileName;
 			const folderExists =
 				app.vault.getAbstractFileByPath(chosenFolderPath);
-			if (!folderExists) app.vault.createFolder(chosenFolderPath);
-			await app.vault.createBinary(filePath, file);
+			if (!folderExists) await app.vault.createFolder(chosenFolderPath);
+			const fileExists =
+				app.vault.getAbstractFileByPath(filePath);
+			if (!fileExists)
+				await app.vault.createBinary(filePath, file);
 
 			if (!view) return new Notice(`Saved to ${filePath}`);
 
@@ -87,31 +117,13 @@ class CameraModal extends Modal {
 					: `\n![[${filePath}]]\n`,
 				cursor
 			);
-			videoStream.getTracks().forEach((track) => {
+			videoStream && videoStream.getTracks().forEach((track) => {
 				track.stop();
 			});
 			this.close(); // closing the modal
 		};
 
-		const getVideoStream = async () => {
-			try {
-				return await navigator.mediaDevices.getUserMedia({
-					video: { deviceId: cameras[cameraIndex].deviceId },
-					audio: true,
-				});
-			} catch (error) {
-				console.log(error);
-				// new Notice(error);
-				return null;
-			}
-		};
 
-		const cameras = (
-			await navigator.mediaDevices.enumerateDevices()
-		).filter((d) => d.kind === "videoinput");
-
-		if (cameras.length <= 1) switchCameraButton.style.display = "none";
-		let cameraIndex = 0;
 		switchCameraButton.onclick = async () => {
 			cameraIndex = (cameraIndex + 1) % cameras.length;
 			videoStream = await getVideoStream();
@@ -130,10 +142,7 @@ class CameraModal extends Modal {
 				saveFile(bufferFile, true);
 			}, "image/png");
 		};
-		let videoStream: MediaStream = null;
-		videoStream = await getVideoStream();
 
-		if (!videoStream) return new Notice("Error in requesting video");
 		videoEl.srcObject = videoStream;
 
 		recordVideoButton.onclick = async () => {
@@ -163,8 +172,7 @@ class CameraModal extends Modal {
 			recorder.start();
 		};
 
-		videoEl.autoplay = true;
-		videoEl.muted = true
+
 	}
 
 	onClose() {
