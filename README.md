@@ -26,3 +26,7 @@ Install directly by browsing from community plugins. Or
 ## Demo
 
 ![demo.gif](./demo.gif)
+
+<!-- ![modal screenshot](./ss1.png) -->
+
+![modal screenshot](./ss2.png)
