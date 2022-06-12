@@ -52,7 +52,7 @@ class CameraModal extends Modal {
 		});
 		filePicker2.accept = "image/*";
 		filePicker2.capture = "camera"; // back camera by default for mobile screens
-		filePicker2.style.display = 'none'
+		// filePicker2.style.display = 'none'
 
 
 		const chosenFolderPath = "attachments/snaps";
@@ -89,13 +89,13 @@ class CameraModal extends Modal {
 			filePicker2.style.display = 'block'
 		}
 
-		const handleImageSelectChange = async () => {
-			const chosenFile = filePicker.files[0];
+		const handleImageSelectChange = async (file: File) => {
+			const chosenFile = file;
 			const bufferFile = await chosenFile.arrayBuffer();
 			saveFile(bufferFile, false, chosenFile.name.split(' ').join('-'));
 		};
-		filePicker.onchange = handleImageSelectChange
-		filePicker2.onchange = handleImageSelectChange
+		filePicker.onchange = () => handleImageSelectChange(filePicker.files[0])
+		filePicker2.onchange = () => handleImageSelectChange(filePicker2.files[0])
 
 
 		const view = this.app.workspace.getActiveViewOfType(MarkdownView);
