@@ -46,12 +46,13 @@ class CameraModal extends Modal {
 		filePicker.accept = "image/*,video/*";
 		filePicker.capture = "camera"; // back camera by default for mobile screens
 
-		// const filePicker2 = webCamContainer.createEl("input", {
-		// 	placeholder: "Choose image file from system",
-		// 	type: "file",
-		// });
-		// filePicker2.accept = "image/*";
-		// filePicker2.capture = "camera"; // back camera by default for mobile screens
+		const filePicker2 = webCamContainer.createEl("input", {
+			placeholder: "Choose image file from system",
+			type: "file",
+		});
+		filePicker2.accept = "image/*";
+		filePicker2.capture = "camera"; // back camera by default for mobile screens
+		filePicker2.style.display = 'none'
 
 
 		const chosenFolderPath = "attachments/snaps";
@@ -85,13 +86,16 @@ class CameraModal extends Modal {
 			snapPhotoButton.style.display = 'none'
 			recordVideoButton.style.display = 'none'
 			switchCameraButton.style.display = 'none'
+			filePicker2.style.display = 'block'
 		}
 
-		filePicker.onchange = async () => {
+		const handleImageSelectChange = async () => {
 			const chosenFile = filePicker.files[0];
 			const bufferFile = await chosenFile.arrayBuffer();
 			saveFile(bufferFile, false, chosenFile.name.split(' ').join('-'));
 		};
+		filePicker.onchange = handleImageSelectChange
+		filePicker2.onchange = handleImageSelectChange
 
 
 		const view = this.app.workspace.getActiveViewOfType(MarkdownView);
