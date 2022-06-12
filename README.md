@@ -8,6 +8,11 @@ Camera plugin for Obsidian(https://obsidian.md).
 -   Create and paste links to the recording automatically if a markdown file is open
 -   File picker
 
+## Note
+
+-   This was built primarily with Obsidan-desktop in mind
+-   Mobile version mostly works, but there may be some differences depending on the mobile manufacturer
+
 ## Installataion
 
 Install directly by browsing from community plugins.
