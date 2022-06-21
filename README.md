@@ -2,6 +2,8 @@
 
 Camera plugin for Obsidian(https://obsidian.md).
 
+Note: This software is in Beta and may have some issues in certain systems like mobile devices
+
 ### Features
 
 -   Take photo and video recordings and have them saved in vault
