@@ -1,8 +1,11 @@
 import { App, MarkdownView, Modal, Notice } from 'obsidian'
+import { CameraPluginSettings } from './SettingsTab';
 
 class CameraModal extends Modal {
-  constructor(app: App) {
+  chosenFolderPath: string;
+  constructor(app: App, cameraSettings: CameraPluginSettings) {
     super(app);
+    this.chosenFolderPath = cameraSettings.chosenFolderPath
   }
 
   async onOpen() {
@@ -40,7 +43,6 @@ class CameraModal extends Modal {
     // filePicker2.style.display = 'none'
 
 
-    const chosenFolderPath = "attachments/snaps";
     const chunks: BlobPart[] = [];
     let recorder: MediaRecorder = null;
     let videoStream: MediaStream = null;
@@ -99,10 +101,10 @@ class CameraModal extends Modal {
       }
       if (!isImage) new Notice("Adding video to vault...")
 
-      const filePath = chosenFolderPath + "/" + fileName;
+      const filePath = this.chosenFolderPath + "/" + fileName;
       const folderExists =
-        app.vault.getAbstractFileByPath(chosenFolderPath);
-      if (!folderExists) await app.vault.createFolder(chosenFolderPath);
+        app.vault.getAbstractFileByPath(this.chosenFolderPath);
+      if (!folderExists) await app.vault.createFolder(this.chosenFolderPath);
       const fileExists =
         app.vault.getAbstractFileByPath(filePath);
       if (!fileExists)

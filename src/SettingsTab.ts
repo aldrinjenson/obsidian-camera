@@ -2,15 +2,16 @@
 import ObsidianCamera from "main";
 import { App, PluginSettingTab, Setting } from "obsidian";
 
-export interface MyPluginSettings {
-  mySetting: string;
+export interface CameraPluginSettings {
+  chosenFolderPath: string;
+
 }
 
-export const DEFAULT_SETTINGS: MyPluginSettings = {
-  mySetting: 'default'
+export const DEFAULT_SETTINGS: CameraPluginSettings = {
+  chosenFolderPath: 'attachments/snaps'
 }
 
-class SampleSettingTab extends PluginSettingTab {
+export default class CameraSettingsTab extends PluginSettingTab {
   plugin: ObsidianCamera;
 
   constructor(app: App, plugin: ObsidianCamera) {
@@ -20,23 +21,19 @@ class SampleSettingTab extends PluginSettingTab {
 
   display(): void {
     const { containerEl } = this;
-
     containerEl.empty();
-
-    containerEl.createEl('h2', { text: 'Settings for my awesome plugin.' });
+    containerEl.createEl('h2', { text: 'Obsidian-Camera settings' });
 
     new Setting(containerEl)
-      .setName('Setting #1')
-      .setDesc('It\'s a secret')
+      .setName('Folder Path')
+      .setDesc('Folder where the videos and snaps should be saved')
       .addText(text => text
         .setPlaceholder('Enter your secret')
-        .setValue(this.plugin.settings.mySetting)
+        .setValue(this.plugin.settings.chosenFolderPath)
         .onChange(async (value) => {
-          console.log('Secret: ' + value);
-          this.plugin.settings.mySetting = value;
+          console.log('Chosen Folder Path: ' + value);
+          this.plugin.settings.chosenFolderPath = value;
           await this.plugin.saveSettings();
         }));
   }
 }
-
-export default SampleSettingTab
