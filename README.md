@@ -30,7 +30,7 @@ Or
 
 ## Usage:
 
--   Open command palete and search for "camera" once the extension is enabled
+-   Open command palette and search for "camera" once the extension is enabled
     OR
 -   Click the camera icon in the left ribbon
 
