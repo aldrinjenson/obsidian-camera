@@ -12,38 +12,41 @@ class CameraModal extends Modal {
   async onOpen() {
     const { contentEl } = this;
     const webCamContainer = contentEl.createDiv();
-    // const pText = webCamContainer.createEl
-    // ('p', { text: 'getVideoStream not yet supported on this device.' });
-    // pText.style.display = 'none'
+
+    const statusMsg = webCamContainer.createEl('span', { text: "Loading.." })
     const videoEl = webCamContainer.createEl("video");
-    videoEl.autoplay = true;
-    videoEl.muted = true
-    const recordVideoButton = webCamContainer.createEl("button", {
+    const buttonsDiv = webCamContainer.createDiv();
+    const firstRow = buttonsDiv.createDiv();
+    const secondRow = buttonsDiv.createDiv();
+    const recordVideoButton = firstRow.createEl("button", {
       text: "Start recording",
     });
-    const switchCameraButton = webCamContainer.createEl("button", {
+    const switchCameraButton = firstRow.createEl("button", {
       text: "Switch Camera",
     });
-    const snapPhotoButton = webCamContainer.createEl("button", {
+    const snapPhotoButton = firstRow.createEl("button", {
       text: "Take a snap",
     });
+    firstRow.style.display = 'none';
+    secondRow.style.display = 'none';
 
-    const filePicker = webCamContainer.createEl("input", {
+    const filePicker = secondRow.createEl("input", {
       placeholder: "Choose image file from system",
       type: "file",
     });
     filePicker.accept = "image/*,video/*";
     filePicker.capture = "camera"; // back camera by default for mobile screens
 
-    const filePicker2 = webCamContainer.createEl("input", {
+    const filePicker2 = secondRow.createEl("input", {
       placeholder: "Choose image file from system",
       type: "file",
     });
     filePicker2.accept = "image/*";
     filePicker2.capture = "camera"; // back camera by default for mobile screens
-    // filePicker2.style.display = 'none'
 
 
+    videoEl.autoplay = true;
+    videoEl.muted = true
     const chunks: BlobPart[] = [];
     let recorder: MediaRecorder = null;
     this.videoStream = null;
@@ -68,13 +71,13 @@ class CameraModal extends Modal {
     };
 
     this.videoStream = await getVideoStream();
-    if (!this.videoStream) {
-      videoEl.style.display = 'none'
-      // pText.style.display = 'block'
-      snapPhotoButton.style.display = 'none'
-      recordVideoButton.style.display = 'none'
-      switchCameraButton.style.display = 'none'
-      filePicker2.style.display = 'block'
+    if (this.videoStream) {
+      firstRow.style.display = 'block'
+      secondRow.style.display = 'block'
+      statusMsg.style.display = "none"
+    } else {
+      secondRow.style.display = 'block'
+      statusMsg.textContent = "Error in loading videostream in your device.."
     }
 
     const handleImageSelectChange = async (file: File) => {
@@ -120,8 +123,6 @@ class CameraModal extends Modal {
           : `\n![[${filePath}]]\n`,
         cursor
       );
-      console.log('going to stop');
-
       this.close(); // closing the modal
     };
 
