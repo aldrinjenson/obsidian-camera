@@ -3,6 +3,7 @@ import { CameraPluginSettings } from './SettingsTab';
 
 class CameraModal extends Modal {
   chosenFolderPath: string;
+  videoStream: MediaStream = null;
   constructor(app: App, cameraSettings: CameraPluginSettings) {
     super(app);
     this.chosenFolderPath = cameraSettings.chosenFolderPath
@@ -45,7 +46,7 @@ class CameraModal extends Modal {
 
     const chunks: BlobPart[] = [];
     let recorder: MediaRecorder = null;
-    let videoStream: MediaStream = null;
+    this.videoStream = null;
 
     const cameras = (
       await navigator.mediaDevices.enumerateDevices()
@@ -66,8 +67,8 @@ class CameraModal extends Modal {
       }
     };
 
-    videoStream = await getVideoStream();
-    if (!videoStream) {
+    this.videoStream = await getVideoStream();
+    if (!this.videoStream) {
       videoEl.style.display = 'none'
       // pText.style.display = 'block'
       snapPhotoButton.style.display = 'none'
@@ -119,16 +120,15 @@ class CameraModal extends Modal {
           : `\n![[${filePath}]]\n`,
         cursor
       );
-      videoStream && videoStream.getTracks().forEach((track) => {
-        track.stop();
-      });
+      console.log('going to stop');
+
       this.close(); // closing the modal
     };
 
 
     switchCameraButton.onclick = async () => {
       cameraIndex = (cameraIndex + 1) % cameras.length;
-      videoStream = await getVideoStream();
+      this.videoStream = await getVideoStream();
     };
 
     snapPhotoButton.onclick = () => {
@@ -145,7 +145,7 @@ class CameraModal extends Modal {
       }, "image/png");
     };
 
-    videoEl.srcObject = videoStream;
+    videoEl.srcObject = this.videoStream;
 
     recordVideoButton.onclick = async () => {
       switchCameraButton.disabled = true;
@@ -158,13 +158,13 @@ class CameraModal extends Modal {
         : "Start Recording";
 
       if (!recorder) {
-        recorder = new MediaRecorder(videoStream, {
+        recorder = new MediaRecorder(this.videoStream, {
           mimeType: "video/webm",
         });
       }
 
       recorder.ondataavailable = (e) => chunks.push(e.data);
-      recorder.onstop = async (e) => {
+      recorder.onstop = async (_) => {
         const blob = new Blob(chunks, {
           type: "audio/ogg; codecs=opus",
         });
@@ -179,6 +179,9 @@ class CameraModal extends Modal {
 
   onClose() {
     const { contentEl } = this;
+    this.videoStream?.getTracks().forEach(track => {
+      track.stop()
+    })
     contentEl.empty();
   }
 }
