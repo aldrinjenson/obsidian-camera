@@ -31,7 +31,7 @@ export default class CameraSettingsTab extends PluginSettingTab {
         .setPlaceholder('Enter your secret')
         .setValue(this.plugin.settings.chosenFolderPath)
         .onChange(async (value) => {
-          console.log('Chosen Folder Path: ' + value);
+          
           this.plugin.settings.chosenFolderPath = value;
           await this.plugin.saveSettings();
         }));
