@@ -128,8 +128,11 @@ class CameraModal extends Modal {
 
 
     switchCameraButton.onclick = async () => {
-      cameraIndex = (cameraIndex + 1) % cameras.length;
-      this.videoStream = await getVideoStream();
+    	cameraIndex = (cameraIndex + 1) % cameras.length;
+		this.videoStream = null;
+        this.videoStream = yield navigator.mediaDevices.getUserMedia({video: { deviceId: cameras[cameraIndex].deviceId }, audio: true});
+		videoEl.srcObject = this.videoStream;
+		videoEl.play();
     };
 
     snapPhotoButton.onclick = () => {
