@@ -129,7 +129,6 @@ class CameraModal extends Modal {
 
     switchCameraButton.onclick = async () => {
     	cameraIndex = (cameraIndex + 1) % cameras.length;
-		this.videoStream = null;
         this.videoStream = await navigator.mediaDevices.getUserMedia({video: { deviceId: cameras[cameraIndex].deviceId }, audio: true});
 		videoEl.srcObject = this.videoStream;
 		videoEl.play();
