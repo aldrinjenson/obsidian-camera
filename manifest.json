@@ -1,7 +1,7 @@
 {
 	"id": "obsidian-camera",
 	"name": "Camera",
-	"version": "1.6.0",
+	"version": "1.8.0",
 	"minAppVersion": "0.14.6",
 	"description": "Camera plugin for Obsidian",
 	"author": "Aldrin Jenson",
