@@ -182,19 +182,23 @@ class CameraModal extends Modal {
 
 		recordVideoButton.onclick = async () => {
 			switchCameraButton.disabled = true;
-			let isRecording: boolean =
-				recorder && recorder.state === "recording";
-			if (isRecording) recorder.stop();
-			isRecording = !isRecording;
-			recordVideoButton.innerText = isRecording
-				? "Stop Recording"
-				: "Start Recording";
-
 			if (!recorder) {
 				recorder = new MediaRecorder(this.videoStream, {
 					mimeType: "video/webm",
 				});
 			}
+
+			let isRecording: boolean =
+				recorder && recorder.state === "recording";
+			if (isRecording) {
+				recorder.stop();
+			} else {
+				recorder.start();
+			}
+			isRecording = !isRecording;
+			recordVideoButton.innerText = isRecording
+				? "Stop Recording"
+				: "Start Recording";
 
 			recorder.ondataavailable = (e) => chunks.push(e.data);
 			recorder.onstop = async (_) => {
@@ -204,7 +208,6 @@ class CameraModal extends Modal {
 				const bufferFile = await blob.arrayBuffer();
 				saveFile(bufferFile, false);
 			};
-			recorder.start();
 		};
 	}
 
