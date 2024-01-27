@@ -36,15 +36,25 @@ class CameraModal extends Modal {
 			placeholder: "Choose image file from system",
 			type: "file",
 		});
+		filePicker.id = "filepicker";
 		filePicker.accept = "image/*,video/*";
 		filePicker.capture = "camera"; // back camera by default for mobile screens
 
-		const filePicker2 = secondRow.createEl("input", {
-			placeholder: "Choose image file from system",
-			type: "file",
-		});
-		filePicker2.accept = "image/*";
-		filePicker2.capture = "camera"; // back camera by default for mobile screens
+		filePicker.style.display = "none";
+
+		const label = secondRow.createEl("label");
+		label.textContent = "Upload";
+		label.style.cursor = "pointer";
+		label.style.display = "inline-block";
+		label.style.margin = "5px 0px";
+		label.style.padding = "5px";
+		label.style.border = "0.5px solid #555";
+		label.htmlFor = "filepicker";
+		label.innerHTML = "&#8679; Upload";
+
+		label.appendChild(filePicker);
+
+		secondRow.appendChild(label);
 
 		videoEl.autoplay = true;
 		videoEl.muted = true;
@@ -82,15 +92,22 @@ class CameraModal extends Modal {
 				"Error in loading videostream in your device..";
 		}
 
-		const handleImageSelectChange = async (file: File) => {
+		const handleImageSelectChange = async (
+			file: File,
+			isImage: boolean = true
+		) => {
 			const chosenFile = file;
 			const bufferFile = await chosenFile.arrayBuffer();
-			saveFile(bufferFile, false, chosenFile.name.split(" ").join("-"));
+			saveFile(bufferFile, isImage, chosenFile.name.split(" ").join("-"));
 		};
-		filePicker.onchange = () =>
-			handleImageSelectChange(filePicker.files[0]);
-		filePicker2.onchange = () =>
-			handleImageSelectChange(filePicker2.files[0]);
+
+		filePicker.onchange = () => {
+			if (!filePicker.files?.length) return;
+			const selectedFile = filePicker.files[0];
+			label.textContent = `Selected: ${selectedFile.name}`;
+			const isImage = selectedFile.type.startsWith("image/");
+			handleImageSelectChange(selectedFile, isImage);
+		};
 
 		const view = this.app.workspace.getActiveViewOfType(MarkdownView);
 
@@ -99,6 +116,8 @@ class CameraModal extends Modal {
 			isImage = false,
 			fileName = ""
 		) => {
+			// console.log("savig file...");
+
 			if (!fileName) {
 				const dateString = (new Date() + "")
 					.slice(4, 28)
@@ -110,7 +129,7 @@ class CameraModal extends Modal {
 					? `image_${dateString}.png`
 					: `video_${dateString}.webm`;
 			}
-			if (!isImage) new Notice("Adding video to vault...");
+			new Notice(`Adding new ${isImage ? "Image" : "Video"} to vault...`);
 
 			const filePath = this.chosenFolderPath + "/" + fileName;
 			const folderExists = app.vault.getAbstractFileByPath(
