@@ -116,8 +116,6 @@ class CameraModal extends Modal {
 			isImage = false,
 			fileName = ""
 		) => {
-			// console.log("savig file...");
-
 			if (!fileName) {
 				const dateString = (new Date() + "")
 					.slice(4, 28)
@@ -149,7 +147,7 @@ class CameraModal extends Modal {
 					: `\n![[${filePath}]]\n`,
 				cursor
 			);
-			this.close(); // closing the modal
+			this.close();
 		};
 
 		switchCameraButton.onclick = async () => {
