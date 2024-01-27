@@ -97,7 +97,7 @@ class CameraModal extends Modal {
 		const saveFile = async (
 			file: ArrayBuffer,
 			isImage = false,
-			fileName = ""
+			fileName = "",
 		) => {
 			if (!fileName) {
 				const dateString = (new Date() + "")
@@ -114,7 +114,7 @@ class CameraModal extends Modal {
 
 			const filePath = this.chosenFolderPath + "/" + fileName;
 			const folderExists = app.vault.getAbstractFileByPath(
-				this.chosenFolderPath
+				this.chosenFolderPath,
 			);
 			if (!folderExists)
 				await app.vault.createFolder(this.chosenFolderPath);
@@ -128,7 +128,7 @@ class CameraModal extends Modal {
 				isImage
 					? `![${fileName}](${filePath})\n`
 					: `\n![[${filePath}]]\n`,
-				cursor
+				cursor,
 			);
 			this.close(); // closing the modal
 		};

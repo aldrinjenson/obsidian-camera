@@ -32,7 +32,7 @@ export default class CameraSettingsTab extends PluginSettingTab {
 					.onChange(async (value) => {
 						this.plugin.settings.chosenFolderPath = value;
 						await this.plugin.saveSettings();
-					})
+					}),
 			);
 	}
 }
